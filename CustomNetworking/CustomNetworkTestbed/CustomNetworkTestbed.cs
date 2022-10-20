@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Net;
-using System.Net.Sockets;
 
 namespace CustomNetworkTestbed
 {
@@ -21,7 +20,11 @@ namespace CustomNetworkTestbed
             IPAddress parsedIPAddress = IPAddress.Parse(passedIPAddress);
             int parsedPort = int.Parse(passedPort);
 
-            //TODO: RUN()
+            IPEndPoint serverEndpoint = new IPEndPoint(parsedIPAddress, parsedPort);
+
+            Server server = new Server(serverEndpoint);
+
+            server.RunServer();
 
             return 0;
         }
