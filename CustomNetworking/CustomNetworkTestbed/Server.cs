@@ -13,7 +13,7 @@ namespace CustomNetworkTestbed
         Socket serverListenerSocket;
 
         bool serverRunning = false;
-        List<StreamWriter> clientWriters = new List<StreamWriter>();
+        List<Client> clients = new List<Client>();
 
         public Server(IPEndPoint iPEndPoint)
         {
@@ -32,6 +32,8 @@ namespace CustomNetworkTestbed
             Thread serverClientListener = new Thread(ClientListenerWorker);
             serverClientListener.Start();
 
+            Console.WriteLine("Server running...");
+
             while (serverRunning)
             {
                 string serverSideInput = Console.ReadLine();
@@ -43,10 +45,11 @@ namespace CustomNetworkTestbed
                     break;
                 }
 
-                foreach (StreamWriter clientWriter in clientWriters)
+                foreach (Client clientObj in clients)
                 {
-                    clientWriter.WriteLine(serverSideInput);
-                    clientWriter.Flush();
+                    clientObj.clientWriter.Write("Server message: ");
+                    clientObj.clientWriter.WriteLine(serverSideInput);
+                    clientObj.clientWriter.Flush();
                 }
             }
 
@@ -57,9 +60,20 @@ namespace CustomNetworkTestbed
 
         void ClientListenerWorker()
         {
+            Socket activeSocket;
+
             while (serverRunning)
             {
-                Socket activeSocket = serverListenerSocket.Accept();
+                try
+                {
+                    activeSocket = serverListenerSocket.Accept();
+                }
+                catch (ObjectDisposedException)
+                {
+                    DisconnectAllUsers();
+                    break;
+                }
+
                 Console.WriteLine("Client connected!");
 
                 NetworkStream netStream = new NetworkStream(activeSocket);
@@ -71,26 +85,42 @@ namespace CustomNetworkTestbed
                 streamWriter.WriteLine("Hello! Thanks for connecting!");
                 streamWriter.Flush();
 
-                clientWriters.Add(streamWriter);
+                Client newClient = new Client(this, activeSocket, netStream, streamReader, streamWriter);
 
-                Thread clientThread = new Thread(ClientSide);
-                clientThread.Start(streamReader);
+                clients.Add(newClient);
+
+                newClient.StartClientThread();
             }
         }
 
-        void ClientSide(object obj)
+        public bool IsServerRunning()
         {
-            StreamReader reader = (StreamReader)obj;
+            return serverRunning;
+        }
 
-            while (serverRunning)
+        public List<Client> GetClientsList()
+        {
+            return clients;
+        }
+
+        public void RemoveClientFromList(int clientID)
+        {
+            foreach (Client client in clients)
             {
-                string tempStr = reader.ReadLine();
-
-                foreach (StreamWriter writer in clientWriters)
+                if (client.ClientID == clientID)
                 {
-                    writer.WriteLine(tempStr);
-                    writer.Flush();
+                    clients.Remove(client);
+                    break;
                 }
+            }
+        }
+
+        public void DisconnectAllUsers()
+        {
+            foreach (Client client in GetClientsList())
+            {
+                client.clientWriter.WriteLine("Server message: Server shutting down");
+                client.ForceServerDisconnect();
             }
         }
     }
