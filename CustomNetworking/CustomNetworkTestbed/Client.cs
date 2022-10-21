@@ -63,6 +63,7 @@ namespace CustomNetworkTestbed
                         {
                             client.clientWriter.Write("You: ");
                             client.clientWriter.Write(tempStr);
+                            client.clientWriter.WriteLine();
                             client.clientWriter.Flush();
                             continue;
                         }
