@@ -7,8 +7,14 @@ namespace CustomNetworkTestbed
     {
         public static int Main(string[] args)
         {
-            string passedIPAddress = "127.0.0.1";
-            string passedPort = "50000";
+            if (args.Length < 2)
+            {
+                Console.WriteLine("No IP or Socket passed as arguments");
+                return -1;
+            }
+
+            string passedIPAddress = args[0];
+            string passedPort = args[1];
 
             //Parsing passed arguments to respected types.
             IPAddress parsedIPAddress = IPAddress.Parse(passedIPAddress);
